@@ -373,6 +373,8 @@ void setup() {
   startGPT0_Encoder( 3, 0 , 1, 8 );     // 2相エンコーダ 0A=P300 0B=P108を使用
   //startGPT0_Encoder( 3, 0 , 0, 0 );   // 1相エンコーダ 0A=P300を使用
 
+  R_ADC0->ADCSR_b.ADCS = 0;
+  R_ADC0->ADCER_b.ACE = 0;
 
   // AGT 1msごとの割り込み処理の設定 PCLKB=24MHz ∴TIMER_SOURCE_DIV_1(1分周)なら、1/(24e6*1) * 24000 = 1ms  設定は１小さい値である23999を設定する
   fsp_timer.begin(TIMER_MODE_PERIODIC, AGT_TIMER, 1, 23999, 1, (timer_source_div_t)TIMER_SOURCE_DIV_1, AGTCallback);
