@@ -1992,11 +1992,11 @@ void motor_st( int pwm )
   int i = getServoAngle();
 
   // ボリューム値により左リミット制御
-  if( i >= 8000 && pattern >= 11 ) {
+  if( i >= 7100 && pattern >= 11 ) {
     if( pwm < -10 ) pwm = 0;
   }
   // ボリューム値により右リミット制御
-  if( i <= -8000 && pattern >= 11 ) {
+  if( i <= -7100 && pattern >= 11 ) {
     if( pwm >  10 ) pwm = 0;
   }
 
