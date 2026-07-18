@@ -216,7 +216,7 @@ volatile float vbat;                    // 電圧
 //--------------------------------------------------------------------------------------
 //パラメータ
 /* 最大走行時間 (0.01秒)  1200 = 12s   */
-#define 	MAXTIME 			500 //1100	 
+#define 	MAXTIME 			1000 //1100	 
 
 volatile uint16_t df_debug = 0;             // デバッグモード
 
@@ -228,7 +228,7 @@ volatile int		    i_TOPSPEED	=		50;		//直線
 #define		MOTOR_OUT_BASE			100		//カーブ用　外側モーター用パラメーター
 
 //前半
-volatile int			i_SPEED_DOWN	=		400;//5		//角度によりi_TOPSPEEDを減速 カーブ前半 8 6
+volatile int			i_SPEED_DOWN	=		200;//5		//角度によりi_TOPSPEEDを減速 カーブ前半 8 6
 volatile int			i_MOTOR_out_R	=	 	100;//1		//外側モーター用パラメーター 1	-2
 volatile int			i_MOTOR_in_F	=		300;//4		//内側モーター用パラメーター 	2 	1
 volatile int			i_MOTOR_in_R	=		100;//-2		//内側モーター用パラメーター -2	-3
@@ -236,18 +236,18 @@ volatile int			i_MOTOR_in_R	=		100;//-2		//内側モーター用パラメータ�
 //後半
 #define		Cu_N_time			200	//Cu_N_time ms カーブを走行すると後半になる 
 
-volatile int			i_SPEED_DOWN_N=		500;//7		//角度によりi_TOPSPEEDを減速  カーブ後半 11 10
-volatile int			i_MOTOR_out_R_N=	300;//5		//外側モーター用パラメーター 後半	5	5
-volatile int			i_MOTOR_in_F_N=		700;//8		//内側モーター用パラメーター　後半	6	6
-volatile int			i_MOTOR_in_R_N=		400;//6		//内側モーター用パラメーター　後半	3	3
+volatile int			i_SPEED_DOWN_N=		300;//7		//角度によりi_TOPSPEEDを減速  カーブ後半 11 10
+volatile int			i_MOTOR_out_R_N=	200;//5		//外側モーター用パラメーター 後半	5	5
+volatile int			i_MOTOR_in_F_N=		400;//8		//内側モーター用パラメーター　後半	6	6
+volatile int			i_MOTOR_in_R_N=		200;//6		//内側モーター用パラメーター　後半	3	3
 
 #define		Cu_FREE_time  		15		//カーブ終了時の後輪フリーの時間(msec）
 
 #define		Cu_BRAKE_time  		10		//カーブ進入時のブレーキ時間 (msec)
 #define		Cu_BRAKE_SP 		30		//カーブ進入時にこの速度以上ならブレーキ
-#define		Cu_BRAKE			-90		//カーブ進入時のブレーキ（後輪） 
-#define		Cu_BRAKE_out		 0		//カーブ進入時のブレーキ(前輪OUT） 
-#define		Cu_BRAKE_Fin		-35		//カーブ進入時のブレーキ(前輪IN） 
+#define		Cu_BRAKE			-100		//カーブ進入時のブレーキ（後輪） 
+#define		Cu_BRAKE_out		 -15		//カーブ進入時のブレーキ(前輪OUT） 
+#define		Cu_BRAKE_Fin		-55		//カーブ進入時のブレーキ(前輪IN） 
 
 //-------------------------------------------------------------
 //坂
@@ -280,7 +280,7 @@ volatile int			i_MOTOR_in_R_N_saka=		400;//6		//内側モーター用パラメ�
 #define		    TOPSPEED_CH_Len		700		//クランク、ハーフ直後のこの距離未満は以下の設定値で走る　注意：カーブ前半のみ有効
 
 //クランク
-volatile int		  i_C_TOPSPEED	=		28;		//クランク(入)
+volatile int		  i_C_TOPSPEED	=		30;		//クランク(入)
 volatile int		  i_C_TOPSPEED2	=		50;		//クランク(出)
 
 //-------------------------------------------------------------
@@ -373,8 +373,8 @@ void setup() {
   startGPT0_Encoder( 3, 0 , 1, 8 );     // 2相エンコーダ 0A=P300 0B=P108を使用
   //startGPT0_Encoder( 3, 0 , 0, 0 );   // 1相エンコーダ 0A=P300を使用
 
-  R_ADC0->ADCSR_b.ADCS = 0;
-  R_ADC0->ADCER_b.ACE = 0;
+  //R_ADC0->ADCSR_b.ADCS = 0; 入れると逆にAD変換ができなくなる？
+  //R_ADC0->ADCER_b.ACE = 0;
 
   // AGT 1msごとの割り込み処理の設定 PCLKB=24MHz ∴TIMER_SOURCE_DIV_1(1分周)なら、1/(24e6*1) * 24000 = 1ms  設定は１小さい値である23999を設定する
   fsp_timer.begin(TIMER_MODE_PERIODIC, AGT_TIMER, 1, 23999, 1, (timer_source_div_t)TIMER_SOURCE_DIV_1, AGTCallback);
@@ -824,7 +824,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
         }else if(ul_cnt_curve_time_1ms <= Cu_N_time){//カーブ前半
           if(enc >= i_TOPSPEED - (-ang / i_SPEED_DOWN)){
-            x=((i_TOPSPEED -(ang / i_SPEED_DOWN))-enc)*2;	
+            x=((i_TOPSPEED -(-ang / i_SPEED_DOWN))-enc)*2;	
 				    r = x;
 				    f = x;
 
@@ -841,7 +841,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
         }else{//カーブ後半
           if(enc >= i_TOPSPEED - (-ang / i_SPEED_DOWN_N)){
-            x=((i_TOPSPEED -(ang / i_SPEED_DOWN_N))-enc)*2;	
+            x=((i_TOPSPEED -(-ang / i_SPEED_DOWN_N))-enc)*2;	
 				    r = x;
 				    f = x;
 
@@ -880,7 +880,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
         }else if(ul_cnt_curve_time_1ms <= Cu_N_time){//カーブ前半
           if(enc >= i_TOPSPEED - (ang / i_SPEED_DOWN)){
-            x=((i_TOPSPEED -(-ang / i_SPEED_DOWN))-enc)*2;
+            x=((i_TOPSPEED -(ang / i_SPEED_DOWN))-enc)*2;
 				    r = x;
 				    f = x;	
 	
@@ -897,7 +897,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
         }else{//カーブ後半
           if(enc >= i_TOPSPEED - (ang / i_SPEED_DOWN_N)){
-            x=((i_TOPSPEED -(-ang / i_SPEED_DOWN_N))-enc)*2;
+            x=((i_TOPSPEED -(ang / i_SPEED_DOWN_N))-enc)*2;
 				    r = x;
 				    f = x;	
 	
@@ -955,7 +955,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       }
 
       if( -1440 < ang && ang < 1440 ) {
-        if(enc_kizyun == 0 || (enc_total - enc_kizyun > 300)){
+        if(enc_kizyun == 0 || (enc_total - enc_kizyun > 100)){
           if( check_crossline() == 1 ) {    // クロスラインチェック
             cnt1 = 0;
             pattern = 21;
@@ -1073,7 +1073,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
         }else if(ul_cnt_curve_time_1ms <= Cu_N_time){//カーブ前半
           if(enc >= i_TOPSPEED_saka3 - (-ang / i_SPEED_DOWN_saka)){
-            x=((i_TOPSPEED_saka3 -(ang / i_SPEED_DOWN_saka))-enc)*2;	
+            x=((i_TOPSPEED_saka3 -(-ang / i_SPEED_DOWN_saka))-enc)*2;	
 				    r = x;
 				    f = x;
 
@@ -1090,7 +1090,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
         }else{//カーブ後半
           if(enc >= i_TOPSPEED_saka3 - (-ang / i_SPEED_DOWN_N_saka)){
-            x=((i_TOPSPEED_saka3 -(ang / i_SPEED_DOWN_N_saka))-enc)*2;	
+            x=((i_TOPSPEED_saka3 -(-ang / i_SPEED_DOWN_N_saka))-enc)*2;	
 				    r = x;
 				    f = x;
 
@@ -1129,7 +1129,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
         }else if(ul_cnt_curve_time_1ms <= Cu_N_time){//カーブ前半
           if(enc >= i_TOPSPEED_saka3 - (ang / i_SPEED_DOWN_saka)){
-            x=((i_TOPSPEED_saka3 -(-ang / i_SPEED_DOWN_saka))-enc)*2;
+            x=((i_TOPSPEED_saka3 -(ang / i_SPEED_DOWN_saka))-enc)*2;
 				    r = x;
 				    f = x;	
 	
@@ -1146,7 +1146,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
         }else{//カーブ後半
           if(enc >= i_TOPSPEED_saka3 - (ang / i_SPEED_DOWN_N_saka)){
-            x=((i_TOPSPEED_saka3 -(-ang / i_SPEED_DOWN_N_saka))-enc)*2;
+            x=((i_TOPSPEED_saka3 -(ang / i_SPEED_DOWN_N_saka))-enc)*2;
 				    r = x;
 				    f = x;	
 	
@@ -1299,10 +1299,10 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       // 右クランク処理
       tsl1401_mode = 3;//左無視
 
-      set_angle = 45 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+      set_angle = -5200;             // +で左 -で右にハンドルを切ります 1度あたり48
       motor_st( pwm_kakudo );
 
-      motor_f( 60,  0 );
+      motor_f( 60,  30 );
       motor_r( 49, 22 );
 
       if((enc_total - enc_kizyun > 150)){// 曲げ終わりチェック
@@ -1322,7 +1322,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
         tsl1401_mode = 0;//通常
       }
 
-      set_angle = 30 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+      set_angle = -4400;             // +で左 -で右にハンドルを切ります 1度あたり48
       motor_st( pwm_kakudo );
 
       motor_r( 80, 80 );
@@ -1374,10 +1374,10 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       // 左クランク処理
       tsl1401_mode = 2;//右無視
 
-      set_angle = -45 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+      set_angle = 5200;             // +で左 -で右にハンドルを切ります 1度あたり48
       motor_st( pwm_kakudo );
 
-      motor_f( 0,  60 );
+      motor_f( 30,  60 );
       motor_r( 22, 49 );
 
       if((enc_total - enc_kizyun > 150)){// 曲げ終わりチェック
@@ -1397,7 +1397,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
         tsl1401_mode = 0;//通常
       }
 
-      set_angle = -30 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+      set_angle = 4400;             // +で左 -で右にハンドルを切ります 1度あたり48
       motor_st( pwm_kakudo );
 
       motor_r( 80, 80 );
@@ -1418,7 +1418,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
     case 51:
       // 左レーンチェンジ　左ハーフラインを通り過ぎるまで待つ
-      set_angle = 0 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+      set_angle = 0;             // +で左 -で右にハンドルを切ります 1度あたり48
       motor_st( pwm_kakudo );
 
       if(enc > i_H_TOPSPEED ){
@@ -1477,7 +1477,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
       tsl1401_mode = 2;//右無視
 
-      set_angle = -40 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+      set_angle = 3000;             // +で左 -で右にハンドルを切ります 1度あたり48
       motor_st( pwm_kakudo );
 
       if(enc > i_H_TOPSPEED2 ){
@@ -1505,10 +1505,10 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
     case 54:
       // 左レーンチェンジ　
       if((tsl1401_Center == 0)&&(tsl1401_Wide == 0)){ //インに落ちそう
-				set_angle = -50 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+				set_angle = 2000;             // +で左 -で右にハンドルを切ります 1度あたり48
 			
       }else{
-				set_angle = -30 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+				set_angle = 0;             // +で左 -で右にハンドルを切ります 1度あたり48
       }
       motor_st( pwm_kakudo );
 
@@ -1535,7 +1535,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       if(tsl1401_Wide != 0 && -10 < tsl1401_Center && tsl1401_Center < 10 ){
         motor_st( pwm_trace );
       }else{
-        set_angle = 20 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+        set_angle = -2000;             // +で左 -で右にハンドルを切ります 1度あたり48
         motor_st( pwm_kakudo );
       }
       
@@ -1621,7 +1621,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
       tsl1401_mode = 2;//右無視
 
-      set_angle = 40 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+      set_angle = -3000;             // +で左 -で右にハンドルを切ります 1度あたり48
       motor_st( pwm_kakudo );
 
       if(enc > i_H_TOPSPEED2 ){
@@ -1649,10 +1649,10 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
     case 64:
       // 右レーンチェンジ　
       if((tsl1401_Center == 0)&&(tsl1401_Wide == 0)){ //インに落ちそう
-				set_angle = 50 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+				set_angle = -2000;             // +で左 -で右にハンドルを切ります 1度あたり48
 			
       }else{
-				set_angle = 30 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+				set_angle = 0;             // +で左 -で右にハンドルを切ります 1度あたり48
       }
       motor_st( pwm_kakudo );
 
@@ -1679,7 +1679,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       if(tsl1401_Wide != 0 && -10 < tsl1401_Center && tsl1401_Center < 10 ){
         motor_st( pwm_trace );
       }else{
-        set_angle = -20 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
+        set_angle = 2000;             // +で左 -で右にハンドルを切ります 1度あたり48
         motor_st( pwm_kakudo );
       }
       
@@ -1855,6 +1855,10 @@ void led_out_m( unsigned char led )
 ///*****************************************************************
 void motor_r( int accele_l, int accele_r )
 {
+  if(100 < accele_l )accele_l = 100;
+  if(accele_l < -100)accele_l = -100;
+  if(100 < accele_r )accele_r = 100;
+  if(accele_r < -100)accele_r = -100;
   log_raw.lr = accele_l;
   log_raw.rr = accele_r;
 
@@ -1899,6 +1903,11 @@ void motor_r( int accele_l, int accele_r )
 ///*****************************************************************
 void motor_f( int accele_l, int accele_r )
 {
+  if(100 < accele_l )accele_l = 100;
+  if(accele_l < -100)accele_l = -100;
+  if(100 < accele_r )accele_r = 100;
+  if(accele_r < -100)accele_r = -100;
+
   log_raw.lf = accele_l;
   log_raw.rf = accele_r;
 
@@ -1983,11 +1992,11 @@ void motor_st( int pwm )
   int i = getServoAngle();
 
   // ボリューム値により左リミット制御
-  if( i >= 6000 && pattern >= 11 ) {
+  if( i >= 8000 && pattern >= 11 ) {
     if( pwm < -10 ) pwm = 0;
   }
   // ボリューム値により右リミット制御
-  if( i <= -6000 && pattern >= 11 ) {
+  if( i <= -8000 && pattern >= 11 ) {
     if( pwm >  10 ) pwm = 0;
   }
 
@@ -2554,7 +2563,7 @@ void binarization(int linestart, int linestop)
 	/* 黒は０　白は１にする */
 	tsl1401_White = 0;					/* 白の数を０にする */
 	
-	if(tsl1401_Max2 - tsl1401_Min2 > 400){ //最大と最小の差があるとき
+	if(tsl1401_Max2 - tsl1401_Min2 > 250){ //最大と最小の差があるとき
     for(i = linestart ; i <= linestop; i++) {
 			if( ImageData[i] > tsl1401_Ave ){ //閾値以上
 				tsl1401_White++;			
@@ -2564,7 +2573,7 @@ void binarization(int linestart, int linestop)
 			}	
 		}
 
-    if(tsl1401_White < 15){
+    if(tsl1401_White < 20){
       tsl1401_WB_ave = tsl1401_Ave;
     }
     
