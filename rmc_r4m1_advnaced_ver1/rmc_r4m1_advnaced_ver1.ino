@@ -1274,6 +1274,8 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
           cnt1 = 0;
           enc_kizyun = enc_total;         // ここを基準とする
           pattern = 31;
+          motor_mode_f( FREE, FREE );
+			    motor_mode_r( FREE, FREE );
           break;
         }
         if( check_leftline_forC() == 1 ) {  // 左クランク
@@ -1281,6 +1283,8 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
           cnt1 = 0;
           enc_kizyun = enc_total;         // ここを基準とする
           pattern = 41;
+          motor_mode_f( FREE, FREE );
+			    motor_mode_r( FREE, FREE );
           break;
         }
       }
@@ -1977,7 +1981,7 @@ void motor_mode_f( int mode_l, int mode_r )
   if( mode_r != 0 ) {
     R_PORT4->PODR_b.PODR10 = 1;
   } else {
-    R_PORT4->PODR_b.PODR14 = 0;
+    R_PORT4->PODR_b.PODR10 = 0;
   }
 }
 
