@@ -142,6 +142,8 @@ volatile char	Cu_flag = 0;			//0 = 直線, 1 = カーブ
 // 坂道検出用
 volatile unsigned long cnt_up;          // 上り坂 しきい値以上の連続時間
 
+// IR
+volatile int IR_L,IR_R; //赤外線センサー
 //TSL1401
 volatile int ImageData[130];			      // カメラの値				
 volatile int BinarizationData[130];	    // ２値化	
@@ -330,6 +332,8 @@ void setup() {
   ad.useCh( 18 );                       // D66端子 電圧
   ad.useCh(  8 );                       // D61端子 CN4 5pin　坂センサ（ポテンショメータ）
   ad.useCh(  2 );                       // TSL1401 D17
+  ad.useCh(  0 );                       // IR R
+  ad.useCh(  1 );                       // IR L
   ad.start();
 
   // 圧電スピーカー
@@ -372,9 +376,6 @@ void setup() {
 
   startGPT0_Encoder( 3, 0 , 1, 8 );     // 2相エンコーダ 0A=P300 0B=P108を使用
   //startGPT0_Encoder( 3, 0 , 0, 0 );   // 1相エンコーダ 0A=P300を使用
-
-  //R_ADC0->ADCSR_b.ADCS = 0; 入れると逆にAD変換ができなくなる？
-  //R_ADC0->ADCER_b.ACE = 0;
 
   // AGT 1msごとの割り込み処理の設定 PCLKB=24MHz ∴TIMER_SOURCE_DIV_1(1分周)なら、1/(24e6*1) * 24000 = 1ms  設定は１小さい値である23999を設定する
   fsp_timer.begin(TIMER_MODE_PERIODIC, AGT_TIMER, 1, 23999, 1, (timer_source_div_t)TIMER_SOURCE_DIV_1, AGTCallback);
@@ -582,6 +583,16 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
   saka = getSakaAngle();
   vbat = AD_018 * 5.00 / (16383/3);    // 16383:5.00V = AD_018 : 1/3*VBAT
 
+  IR_L = AD_001;
+  IR_R = AD_000;
+
+/*
+  Serial.print(IR_L);
+  Serial.print(" ");
+  Serial.print(IR_R);
+  Serial.print(" ");
+  Serial.println(IR_R - IR_L);
+*/
   cnt_start++;
   cnt1++;
   if( pattern >= 10 && pattern <= 1000 ) {
