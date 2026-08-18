@@ -144,6 +144,9 @@ volatile unsigned long cnt_up;          // 上り坂 しきい値以上の連続
 
 // IR
 volatile int IR_L,IR_R; //赤外線センサー
+volatile int IR_max[2] = {0};
+volatile int IR_min[2] = {99999,99999};
+
 //TSL1401
 volatile int ImageData[130];			      // カメラの値				
 volatile int BinarizationData[130];	    // ２値化	
@@ -577,22 +580,17 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
   static int si_Encoder1_buf[10] = {0}; 
   int i,x,r,f;
   unsigned char b;
+  static int IR_calib_flag = 0;
+  static int IR_L_tmp,IR_R_tmp;
 
   ang_old = ang;//前回値の保存
   ang  = getServoAngle();
   saka = getSakaAngle();
   vbat = AD_018 * 5.00 / (16383/3);    // 16383:5.00V = AD_018 : 1/3*VBAT
 
-  IR_L = AD_001;
-  IR_R = AD_000;
+  IR_L_tmp = AD_001;
+  IR_R_tmp = AD_000;
 
-/*
-  Serial.print(IR_L);
-  Serial.print(" ");
-  Serial.print(IR_R);
-  Serial.print(" ");
-  Serial.println(IR_R - IR_L);
-*/
   cnt_start++;
   cnt1++;
   if( pattern >= 10 && pattern <= 1000 ) {
@@ -637,6 +635,81 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
   servoControl2();                      // ステアリングモータ制御（角度）          実測で0.94usで実行
 
   //Serial.println(saka);
+  //Serial.println(ang);
+
+  //赤外線センサーのキャリブレーション
+  switch(IR_calib_flag){
+    case 0:
+      if( pushsw_get() == 1 ) {
+          angle0_ad  += ang;                  // 0度の位置記憶
+          sp.setSpPattern( 0x8000 );
+          IR_calib_flag = 1;
+      }
+      return;//キャリブレーション未完了なのでここで終わり
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+      if(IR_calib_flag == 1){
+        motor_st(15);
+        if(ang < -2000){//R
+          IR_calib_flag = 2;
+        }
+      }else if(IR_calib_flag == 2){
+        motor_st(-15);
+        if(2000 < ang){//L
+          IR_calib_flag = 3;
+        }
+      }else if(IR_calib_flag == 3){
+        motor_st(15);
+        if(ang < -2000){//R
+          IR_calib_flag = 4;
+        }
+      }else if(IR_calib_flag == 4){
+        motor_st(-15);
+        if(0 < ang){//L
+          IR_calib_flag = 5;
+          motor_st(0);
+        }
+      }
+
+      //最大値、最小値の更新
+      IR_max[0] = max(IR_max[0],IR_R_tmp);
+      IR_min[0] = min(IR_min[0],IR_R_tmp);
+      IR_max[1] = max(IR_max[1],IR_L_tmp);
+      IR_min[1] = min(IR_min[1],IR_L_tmp);
+      return;//キャリブレーション未完了なのでここで終わり
+
+    case 5:
+    default://キャリブレーション完了
+      break;
+  }
+  //赤外線センサーのキャリブレーション完了済みの場合はこの下が実行される
+
+  IR_R = 100 * (IR_R_tmp - IR_min[0]) / (IR_max[0] - IR_min[0]);
+  IR_L = 100 * (IR_L_tmp - IR_min[1]) / (IR_max[1] - IR_min[1]);
+  //Serial.println((IR_R - IR_L)/5);
+/*
+  Serial.print(IR_L);
+  Serial.print(" ");
+  Serial.print(IR_R);
+  Serial.print(" ");
+  Serial.print(IR_R - IR_L);
+  Serial.print(" ");
+  Serial.print(IR_L_tmp);
+  Serial.print(" ");
+  Serial.print(IR_R_tmp);
+  Serial.print(" ");
+  Serial.print(IR_min[1]);
+  Serial.print(" ");
+  Serial.print(IR_max[1]);
+  Serial.print(" ");
+  Serial.print(IR_min[0]);
+  Serial.print(" ");
+  Serial.println(IR_max[0]);
+  return;
+*/
+
 
   // 10回中1回実行する処理
   switch( cnt_start % 10 ) {
@@ -2004,7 +2077,8 @@ void motor_mode_f( int mode_l, int mode_r )
 ///*****************************************************************
 void motor_st( int pwm )
 {
-  int i = getServoAngle();
+  //int i = getServoAngle(); 使用禁止　連続でAD変換すると値がおかしくなる
+  int i = ang;//1ms割り込みで取得した値を再利用すること
 
   // ボリューム値により左リミット制御
   if( i >= 7100 && pattern >= 11 ) {
@@ -2234,7 +2308,7 @@ void servoControl2( void )
 //**********************************************************************
 int diff( int pwm )
 {
-  int i  = getServoAngle() / 48;        // 1度あたりの増分で割る
+  int i  = ang / 48;        // 1度あたりの増分で割る
   if( i <  0 ) {
     i = -i;
   }
