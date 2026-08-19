@@ -199,7 +199,12 @@ typedef struct {
     char rr;                            // モータ右後
     char st;                            // モータステアリング
     int16_t saka_ad;                    // 坂AD
-    char f_updown;                      // 上り坂、下り坂フラグ
+    int16_t IR_sa;                      // 赤外線センサー
+    int16_t IR_saka_flag;               // 赤外線使用有無
+    int16_t tsl1401_mode;               // カメラモード
+    int16_t tsl1401_Max2;               // カメラ最大値
+    int16_t tsl1401_Min2;               // カメラ最小値
+    int16_t vbat;                       // バッテリー電圧
 } log_t;
 log_t log_buff[LOG_MAX];                // ログ保存用構造体
 log_t log_raw;                          // ログ現在の値
@@ -515,7 +520,7 @@ void loop() {
 
       case 992:
         // 最初に書き込む内容
-        microSD.println( "ms,pattern,center,wide,angle,m_sv,m_lf,m_rf,m_lr,m_rr,enc,saka_ad" );
+        microSD.println( "ms,pattern,center,wide,angle,m_sv,m_lf,m_rf,m_lr,m_rr,enc,saka_ad,IR,IR_flag,mode,Max2,Min2,vbat" );
         log_st = LOG_INIT_END;
         log_pattern = 993;
         break;
@@ -528,7 +533,7 @@ void loop() {
 
       case 994:
         if( log_write != log_read ) {    // 保存するログが更新されたらmicroSDにログを書き込み
-          char _log_buf[8];
+         // char _log_buf[8];
          // sprintf( _log_buf, "%04d", convertBCD_CharToLong( log_buff[log_read].dsensor & 0x0f) );  // センサの値は2進数8桁で表示
           microSD.print( log_buff[log_read].time );
           microSD.print( "," );
@@ -553,6 +558,18 @@ void loop() {
           microSD.print( log_buff[log_read].encoder );
           microSD.print( "," );
           microSD.print( (int)log_buff[log_read].saka_ad );
+          microSD.print( "," );
+          microSD.print( (int)log_buff[log_read].IR_sa );
+          microSD.print( "," );
+          microSD.print( (int)log_buff[log_read].IR_saka_flag );
+          microSD.print( "," );
+          microSD.print( (int)log_buff[log_read].tsl1401_mode );
+          microSD.print( "," );
+          microSD.print( (int)log_buff[log_read].tsl1401_Max2 );
+          microSD.print( "," );
+          microSD.print( (int)log_buff[log_read].tsl1401_Min2 );
+          microSD.print( "," );
+          microSD.print( (int)log_buff[log_read].vbat );
           microSD.println( "" );
 
           log_read++;
@@ -737,6 +754,13 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
         log_buff[log_write].encoder = enc;
 
         log_buff[log_write].saka_ad = saka;
+        log_buff[log_write].IR_sa = IR_sa;
+        log_buff[log_write].IR_saka_flag = IR_saka_flag;
+        log_buff[log_write].tsl1401_mode = tsl1401_mode;
+        log_buff[log_write].tsl1401_Max2 = tsl1401_Max2;
+        log_buff[log_write].tsl1401_Min2 = tsl1401_Min2;
+
+        log_buff[log_write].vbat = (int)(vbat*100);
       
         log_write++;
         if( log_write >= LOG_MAX ) {
