@@ -132,6 +132,7 @@ volatile int enc;                       // 10ms毎の最新値
 
 //  ステアリングモータ関連
 volatile int pwm_trace;                 // 中心線トレーズ時のmotor_st PWM値
+volatile int pwm_trace_IR;              // 中心線トレーズ時のmotor_st PWM値 赤外線センサー用
 volatile int pwm_kakudo;                // 角度制御のときのmotor_st PWM値
 volatile int set_angle;                 // 指示角度
 
@@ -143,9 +144,10 @@ volatile char	Cu_flag = 0;			//0 = 直線, 1 = カーブ
 volatile unsigned long cnt_up;          // 上り坂 しきい値以上の連続時間
 
 // IR
-volatile int IR_L,IR_R; //赤外線センサー
+volatile int IR_L,IR_R,IR_sa; //赤外線センサー
 volatile int IR_max[2] = {0};
 volatile int IR_min[2] = {99999,99999};
+volatile int IR_saka_flag = 0;
 
 //TSL1401
 volatile int ImageData[130];			      // カメラの値				
@@ -228,6 +230,10 @@ volatile uint16_t df_debug = 0;             // デバッグモード
 volatile float df_p = 7.00;                    // PD制御のP値
 volatile float df_d = 0.500;                    // PD制御のD値
 
+volatile float df_p_IR = 7.00;                 // PD制御のP値 赤外線センサー用
+volatile float df_d_IR = 0.500;                // PD制御のD値 赤外線センサー用
+
+//----------------------------------------------------
 volatile int		    i_TOPSPEED	=		50;		//直線
 
 #define		MOTOR_OUT_BASE			100		//カーブ用　外側モーター用パラメーター
@@ -632,6 +638,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
   //return;
 
   servoControl();                       // ステアリングモータ制御（中心線トレース）実測で0.84usで実行
+  servoControl_IR();                    // ステアリングモータ制御（中心線トレース）赤外線センサー用
   servoControl2();                      // ステアリングモータ制御（角度）          実測で0.94usで実行
 
   //Serial.println(saka);
@@ -688,7 +695,8 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
   IR_R = 100 * (IR_R_tmp - IR_min[0]) / (IR_max[0] - IR_min[0]);
   IR_L = 100 * (IR_L_tmp - IR_min[1]) / (IR_max[1] - IR_min[1]);
-  //Serial.println((IR_R - IR_L)/5);
+  IR_sa = (IR_R - IR_L)/5;
+  //Serial.println(IR_sa);
 /*
   Serial.print(IR_L);
   Serial.print(" ");
@@ -1076,6 +1084,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
             cnt1 = 0;
             saka_cnt++;
             enc_kizyun = enc_total;         // ここを基準とする
+            IR_saka_flag = 0;
             pattern = 101;
             break;
           }
@@ -1088,7 +1097,19 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
     case 101:
       // 上り坂
-      motor_st( pwm_trace );
+      if(IR_saka_flag == 0){
+        motor_st( pwm_trace );//カメラでトレース
+
+        if(-1500 < ang && ang < 1500){//ハンドルがまっすぐ
+          if(-10 < tsl1401_Center && tsl1401_Center < 10){//カメラがラインをとらえている
+            if(-5 < IR_sa && IR_sa < 5){//赤外線がラインをとらえている
+              IR_saka_flag = 1;//赤外線トレースに変更する
+            }
+          }
+        }
+      }else{
+        motor_st( pwm_trace_IR );//赤外線でトレース
+      }
 
       led_out( 0x6 ); // 黄（赤＋緑）
       
@@ -1106,13 +1127,14 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
       if( enc_total - enc_kizyun >= Saka_Encoder1 ) {  // m進んだら
         enc_kizyun = enc_total;         // ここを基準とする
+        IR_saka_flag = 1;
         pattern = 102;
       }
       break;
 
     case 102:
       // 上り坂 頂上付近なので強めにブレーキ
-      motor_st( pwm_trace );
+      motor_st( pwm_trace_IR );//赤外線トレース
 
       if( enc >= i_TOPSPEED_saka2 ) {
         fmotor = (i_TOPSPEED_saka2-enc)*5;
@@ -1133,7 +1155,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
   
     case 103:
       // 坂上
-      motor_st( pwm_trace );
+      motor_st( pwm_trace_IR );//赤外線トレース
 
       if(ang < -400){//右カーブ
 
@@ -1274,7 +1296,20 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
     case 104:
       // 下り坂
-      motor_st( pwm_trace );
+      if(IR_saka_flag == 0){
+        motor_st( pwm_trace );//カメラでトレース
+
+      }else{
+        motor_st( pwm_trace_IR );//赤外線でトレース
+
+        if(-1500 < ang && ang < 1500){//ハンドルがまっすぐ
+          if(-10 < tsl1401_Center && tsl1401_Center < 10){//カメラがラインをとらえている
+            if(-5 < IR_sa && IR_sa < 5){//赤外線がラインをとらえている
+              IR_saka_flag = 0;//カメラトレースに変更する
+            }
+          }
+        }
+      }
 
       if( enc >= i_TOPSPEED_saka4 ) {
         motor_f( 0, 0 );
@@ -1286,6 +1321,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
       if( enc_total - enc_kizyun >= Saka_Encoder4 ) {  // m進んだら
         enc_kizyun = enc_total;         // ここを基準とする
+        IR_saka_flag = 0;//カメラトレースに変更する
         pattern = 11;
         led_out( 0x0 );
       }
@@ -2269,6 +2305,34 @@ void servoControl( void )
     pwm_trace = ret;
 
     tsl1401_Center_before = (tsl1401_Center64 -64);                 // 次回はこの値が1ms前の値となる
+}
+
+//**********************************************************************
+// ステアリングモータ PD制御 赤外線センサー用
+// 引数　 なし
+// 戻り値 グローバル変数 pwm_trace_IR に代入
+//**********************************************************************
+void servoControl_IR( void )
+{
+    static int IR_before = 0;         // 前回のアナログセンサ値
+    int ret;
+    float work_p, work_d;
+
+    // ステアリングモータ用PWM値計算
+    work_p = df_p_IR * (IR_sa);                   // 比例
+    work_d = df_d_IR * (IR_before - (IR_sa) );  // 微分(目安はPの5～10倍)
+    ret = (int)(work_p - work_d);
+
+    // PWMの上限、下限の設定
+    if( ret >  100 ) {
+        ret =  100;
+    }
+    if( ret < -100 ) {
+        ret = -100;
+    }
+    pwm_trace_IR = ret;
+
+    IR_before = IR_sa;                 // 次回はこの値が1ms前の値となる
 }
 
 //**********************************************************************
