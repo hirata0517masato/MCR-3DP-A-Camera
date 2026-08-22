@@ -274,7 +274,7 @@ volatile int saka_max = 1; //認識できる坂の数
 #define 	Saka_Encoder3  	2500//坂上
 #define		Saka_Encoder4  	1200//下り坂
 
-volatile int		    i_TOPSPEED_saka	  =		45;		//上り坂
+volatile int		    i_TOPSPEED_saka	  =		30;		//上り坂
 volatile int		    i_TOPSPEED_saka2	=		30;		//坂頂上付近
 volatile int		    i_TOPSPEED_saka3	=		50;		//坂上
 volatile int		    i_TOPSPEED_saka4	=		50;		//下り坂
