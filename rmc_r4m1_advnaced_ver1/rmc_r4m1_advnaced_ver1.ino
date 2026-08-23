@@ -619,7 +619,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
   IR_L_tmp = AD_001;
   IR_R_tmp = AD_000;
-  
+
   cnt_start++;
   cnt1++;
   if( pattern >= 10 && pattern <= 1000 ) {
@@ -765,6 +765,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
   // 10回中1回実行する処理
   switch( cnt_start % 10 ) {
     case 0:
+    case 5: //5msに１回ログ保存する
       if( log_st == LOG_WRITE) {
         log_buff[log_write].time    = cnt_start;
         log_buff[log_write].ptn     = pattern;
