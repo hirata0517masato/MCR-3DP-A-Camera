@@ -124,6 +124,7 @@ volatile int saka_cnt = 0; //坂の回数
 
 //char _buf[128];                         // LCD文字列作業用
 char _fn_buf[16];                       // ファイルネーム文字列作業用
+char _log_buf[130];                       // ログ文字列作業用
 
 // エンコーダ関連
 volatile long enc_total;                // 積算値(距離)保存用
@@ -439,8 +440,7 @@ void setup() {
   motor_f( 0, 0 );
   motor_r( 0, 0 );
 
-  if( df_debug != 0 ) {
-    // デバッグモードが１なら音を鳴らし、1.5秒間LEDの点灯方法を変える
+  if(dipsw_get() == 3){//ログ取得モード
     sp.setSpPattern( 0xf0f0 );
     cnt1 = 0;
     while( cnt1 < 1500 ) {
@@ -450,10 +450,27 @@ void setup() {
         led_out( 0x0 );
       }
     }
+    led_out( 0x0 );
+
+    log_pattern= 1;//ログ出力モード
+  }else{
+
+    if( df_debug != 0 ) {
+      // デバッグモードが１なら音を鳴らし、1.5秒間LEDの点灯方法を変える
+      sp.setSpPattern( 0xf0f0 );
+      cnt1 = 0;
+      while( cnt1 < 1500 ) {
+        if( cnt1 % 200 < 100 ) {
+          led_out( 0x5 );
+        } else {
+          led_out( 0x0 );
+        }
+      }
+    }
+    
+    sp.setSpPattern( 0x8000 );            // 初期化終了
+    f_setup_end = 1;                      // setup完了
   }
-  
-  sp.setSpPattern( 0x8000 );            // 初期化終了
-  f_setup_end = 1;                      // setup完了
 
 }
 
@@ -470,6 +487,69 @@ void loop() {
         // 待機
         if( log_st == LOG_INIT ) {
           log_pattern = 991;
+        }
+        break;
+      
+      case 1://ログ出力モード
+        // 連番の読み込み
+        i = 0;
+        while( pushsw_get() == 0 ) ;//スイッチ入力待ち
+        while( pushsw_get() == 1 ) ;//スイッチを離すまで待つ
+
+        //Serial.println( "microSDのrenban.txtを読み込みます。" );
+        microSD = SD.open( "renban.txt", FILE_READ );
+        if( microSD != 0 ) {
+          int length = microSD.available();
+          if( length > 8 ){
+            length = 8;
+          }
+          microSD.read( _fn_buf, length );
+          sscanf( _fn_buf, "%d", &i );//renban.txtに記載されている値をiに取得
+          if( i < 0 || i >= 99999 ) {
+              i = 0;
+          }
+          microSD.close();
+          log_pattern = 2;
+        } else {
+          Serial.println( "renban.txtが開けませんのでログ出力モードが使用できません" );
+          log_pattern = 995;
+        }
+        break;
+      
+      case 2://i 番目のログを出力する
+        sprintf( _fn_buf, "log%05d.csv", i );
+        Serial.print( "microSDの");
+        Serial.println(  _fn_buf);
+        microSD = SD.open(  _fn_buf, FILE_READ );//i番目のログをオープン
+
+        if( microSD != 0 ) {
+          //long length = microSD.available();//i番目のログのサイズを取得
+          long long length = microSD.size();//i番目のログのサイズを取得
+          Serial.println( length);
+          while( length > 0 ) {
+            int readLength;
+
+            if( length > 128 ) {
+              readLength = 128;
+            } else {
+              readLength = length;
+            }
+
+            microSD.read( _log_buf, readLength );
+
+            // 文字列として扱うための終端
+            _log_buf[readLength] = '\0';
+
+            Serial.print( _log_buf );
+            length -= readLength;
+          }
+          Serial.println("log END");
+          log_pattern = 995;//終了
+
+        }else {
+          Serial.print(  _fn_buf);
+          Serial.println( "が開けませんのでログ出力モードが使用できません" );
+          log_pattern = 995;
         }
         break;
 
