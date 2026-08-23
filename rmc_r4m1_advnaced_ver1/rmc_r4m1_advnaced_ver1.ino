@@ -619,7 +619,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
   IR_L_tmp = AD_001;
   IR_R_tmp = AD_000;
-
+  
   cnt_start++;
   cnt1++;
   if( pattern >= 10 && pattern <= 1000 ) {
@@ -636,6 +636,26 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
   if( f_setup_end == 0 ) {              // セットアップ実行中はここで終わり
     return;
   }
+
+  // エンコーダ制御　ここから
+  i = INT_GPT0_CNT;
+  si_Encoder1_buf[i_Timer10]  = (i - enc_buff)/2;
+  enc_total += si_Encoder1_buf[i_Timer10];
+  if(enc_total < 0)enc_total = 0;
+  if((i - enc_buff)%2 == 0){
+    enc_buff = i;
+  }else{
+    enc_buff = i - 1;
+  }
+ 
+  i = 0;
+	for(int k = 0; k < 10; k++)i += si_Encoder1_buf[k];
+	enc = i;
+
+  i_Timer10++;
+  if(i_Timer10 >= 10)i_Timer10 = 0;
+  //エンコーダ関連　ここまで
+
 
   tsl1401(); 
   if(pattern == 0){
@@ -778,24 +798,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       break;
   }
 
-  // エンコーダ制御　ここから
-  i = INT_GPT0_CNT;
-  si_Encoder1_buf[i_Timer10]  = (i - enc_buff)/2;
-  enc_total += si_Encoder1_buf[i_Timer10];
-  if(enc_total < 0)enc_total = 0;
-  if((i - enc_buff)%2 == 0){
-    enc_buff = i;
-  }else{
-    enc_buff = i - 1;
-  }
- 
-  i = 0;
-	for(int k = 0; k < 10; k++)i += si_Encoder1_buf[k];
-	enc = i;
 
-  i_Timer10++;
-  if(i_Timer10 >= 10)i_Timer10 = 0;
-  //エンコーダ関連　ここまで
 
  
  #ifndef DEBUG_PRINT
