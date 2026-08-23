@@ -518,14 +518,13 @@ void loop() {
       
       case 2://i 番目のログを出力する
         sprintf( _fn_buf, "log%05d.csv", i );
-        Serial.print( "microSDの");
         Serial.println(  _fn_buf);
         microSD = SD.open(  _fn_buf, FILE_READ );//i番目のログをオープン
 
         if( microSD != 0 ) {
           //long length = microSD.available();//i番目のログのサイズを取得
           long long length = microSD.size();//i番目のログのサイズを取得
-          Serial.println( length);
+          //Serial.println( length);
           while( length > 0 ) {
             int readLength;
 
