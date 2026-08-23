@@ -150,7 +150,7 @@ volatile int IR_min[2] = {99999,99999};
 volatile int IR_saka_flag = 0;
 
 //TSL1401
-volatile int ImageData[130];			      // カメラの値				
+volatile int ImageData[130];			      // カメラの値			
 volatile int BinarizationData[130];	    // ２値化	
 			
 volatile int tsl1401_Max = 0,tsl1401_Max2 = 0,tsl1401_Min,tsl1401_Min2,tsl1401_Ave;	//カメラ読み取り最大値、最小値、平均値
@@ -204,6 +204,8 @@ typedef struct {
     int16_t tsl1401_mode;               // カメラモード
     int16_t tsl1401_Max2;               // カメラ最大値
     int16_t tsl1401_Min2;               // カメラ最小値
+    int16_t tsl1401_Ave;                // カメラ平均値
+    int16_t tsl1401_WB_ave;             // カメラ全白、前黒の閾値
     int16_t vbat;                       // バッテリー電圧
 } log_t;
 log_t log_buff[LOG_MAX];                // ログ保存用構造体
@@ -520,7 +522,7 @@ void loop() {
 
       case 992:
         // 最初に書き込む内容
-        microSD.println( "ms,pattern,center,wide,angle,m_sv,m_lf,m_rf,m_lr,m_rr,enc,saka_ad,IR,IR_flag,mode,Max2,Min2,vbat" );
+        microSD.println( "ms,pattern,center,wide,angle,m_sv,m_lf,m_rf,m_lr,m_rr,enc,saka_ad,IR_sa,IR_saka_flag,mode,Max2,Min2,tsl1401_Ave,tsl1401_WB_ave,vbat" );
         log_st = LOG_INIT_END;
         log_pattern = 993;
         break;
@@ -568,6 +570,10 @@ void loop() {
           microSD.print( (int)log_buff[log_read].tsl1401_Max2 );
           microSD.print( "," );
           microSD.print( (int)log_buff[log_read].tsl1401_Min2 );
+          microSD.print( "," );
+          microSD.print( (int)log_buff[log_read].tsl1401_Ave );
+          microSD.print( "," );
+          microSD.print( (int)log_buff[log_read].tsl1401_WB_ave );
           microSD.print( "," );
           microSD.print( (int)log_buff[log_read].vbat );
           microSD.println( "" );
@@ -759,6 +765,8 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
         log_buff[log_write].tsl1401_mode = tsl1401_mode;
         log_buff[log_write].tsl1401_Max2 = tsl1401_Max2;
         log_buff[log_write].tsl1401_Min2 = tsl1401_Min2;
+        log_buff[log_write].tsl1401_Ave = tsl1401_Ave;
+        log_buff[log_write].tsl1401_WB_ave = tsl1401_WB_ave;
 
         log_buff[log_write].vbat = (int)(vbat*100);
       
@@ -1077,14 +1085,14 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
             pattern = 21;
             enc_kizyun = enc_total;         // ここを基準とする
             break;
-          }
-          if( check_rightline() == 1 ) {    // 右ハーフラインチェック
+
+          }else if( check_rightline() == 1 ) {    // 右ハーフラインチェック
             cnt1 = 0;
             pattern = 51;
             enc_kizyun = enc_total;         // ここを基準とする
             break;
-          }
-          if( check_leftline() == 1 ) {     // 右ハーフラインチェック
+            
+          }else if( check_leftline() == 1 ) {     // 右ハーフラインチェック
             cnt1 = 0;
             pattern = 61;
             enc_kizyun = enc_total;         // ここを基準とする
@@ -1109,6 +1117,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
             saka_cnt++;
             enc_kizyun = enc_total;         // ここを基準とする
             IR_saka_flag = 0;
+            tsl1401_mode = 1;
             pattern = 101;
             break;
           }
@@ -1347,6 +1356,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
         enc_kizyun = enc_total;         // ここを基準とする
         IR_saka_flag = 0;//カメラトレースに変更する
         pattern = 11;
+        tsl1401_mode = 0;
         led_out( 0x0 );
       }
       break;
@@ -2178,7 +2188,7 @@ int check_crossline( void )
 {
     int ret = 0;
 
-    if( (tsl1401_Wide > 60) || ((tsl1401_Wide >= 40) && (-10 < tsl1401_Center ) && (tsl1401_Center < 10))  ){
+    if( (tsl1401_Wide > 50) || ((tsl1401_Wide >= 40) && (-10 < tsl1401_Center ) && (tsl1401_Center < 10))  ){
 		  ret = 1;			/* クロスライン発見 */
 	  }
     return ret;
@@ -2712,7 +2722,6 @@ void ImageCapture(int linestart, int linestop){
 	
 	TSL1401_CLK_HIGH;
 	TSL1401_CLK_LOW;
-
 }
 
 /************************************************************************/
@@ -2740,7 +2749,7 @@ void binarization(int linestart, int linestop)
 	/* 黒は０　白は１にする */
 	tsl1401_White = 0;					/* 白の数を０にする */
 	
-	if(tsl1401_Max2 - tsl1401_Min2 > 250){ //最大と最小の差があるとき
+	if(tsl1401_Max2 - tsl1401_Min2 > 5000){ //最大と最小の差があるとき  
     for(i = linestart ; i <= linestop; i++) {
 			if( ImageData[i] > tsl1401_Ave ){ //閾値以上
 				tsl1401_White++;			
@@ -2750,13 +2759,9 @@ void binarization(int linestart, int linestop)
 			}	
 		}
 
-    if(tsl1401_White < 20){
-      tsl1401_WB_ave = tsl1401_Ave;
-    }
-    
-  
   }else{
-    if(tsl1401_Min2 > tsl1401_WB_ave){
+    //if(tsl1401_Min2 > tsl1401_WB_ave){
+    if(tsl1401_Min2 > 6500){ //////////////////////////ラインが見えたときの最小値　と　全白の時の最小値　の中間くらいの値を設定する
       /* 白が一直線のとき */
       tsl1401_White = 127;
       for(i = linestart ; i <= linestop; i++) {
@@ -2832,17 +2837,17 @@ void WhiteLineWide(int linestart, int linestop)
 	}
 		
 	
-	if(tsl1401_White > 50){//全白にする
+	if(tsl1401_White > 40){//全白にする
 		tsl1401_Wide = 127;tsl1401_Center64 = 64;						/* 白一面 */
 		
-	}else if((tsl1401_White > 5) && ((linestop - linestart) > 4)){//白が少なすぎない && ラインを探す範囲が狭すぎない
+	}else if((tsl1401_White > 3) && ((linestop - linestart) > 4)){//白が少なすぎない && ラインを探す範囲が狭すぎない
 	
 		tsl1401_Wide = tsl1401_Rsensor - tsl1401_Lsensor;					/* 幅を求める */	
 		tsl1401_Center64 = (tsl1401_Lsensor + tsl1401_Rsensor) >> 1;		/* 重心を求める */	
 			
 			
 		//ライン細すぎ || ( 前回、黒又は白一色ではない && ハーフラインなどではない &&  (急にラインが移動した))
-		if((((tsl1401_mode == 1) && (tsl1401_Wide < 4)) || ((tsl1401_mode != 1) && (tsl1401_Wide < 6))) || ((tsl1401_Center_lasttime != 64) && (tsl1401_White < 20) && (((tsl1401_Center64 - tsl1401_Center_lasttime) > 10) || ((tsl1401_Center64 - tsl1401_Center_lasttime) < -10)))){
+		if((((tsl1401_mode == 1) && (tsl1401_Wide < 3)) || ((tsl1401_mode != 1) && (tsl1401_Wide < 4))) || ((tsl1401_Center_lasttime != 64) && (tsl1401_White < 13) && (((tsl1401_Center64 - tsl1401_Center_lasttime) > 10) || ((tsl1401_Center64 - tsl1401_Center_lasttime) < -10)))){
 					
 			if(tsl1401_Center_lasttime < 64){
 						
@@ -2857,7 +2862,11 @@ void WhiteLineWide(int linestart, int linestop)
 		tsl1401_Wide = 0;tsl1401_Center64 = 64;						/* 黒一面 */
 	}	
 
-  tsl1401_Center = tsl1401_Center64 -64;			
+  tsl1401_Center = tsl1401_Center64 -64;	
+
+  if( 3 < tsl1401_Wide && tsl1401_Wide < 15){//ラインが見えている場合
+    tsl1401_WB_ave = tsl1401_Ave;//全白、前黒の閾値を更新
+  }		
 }
 
 //**********************************************************************
