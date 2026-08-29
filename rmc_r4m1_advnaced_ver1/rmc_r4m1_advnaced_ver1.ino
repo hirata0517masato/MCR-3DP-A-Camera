@@ -1241,7 +1241,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       break;
 
     case 101:
-       led_out( 0x3 ); // 赤
+       led_out( 0x4 ); // 赤
       // 上り坂
       if(IR_saka_flag == 0){
         motor_st( pwm_trace );//カメラでトレース
@@ -1303,7 +1303,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       break;
   
     case 103:
-      led_out( 0x1 ); // 青
+      led_out( 0x6 ); // 黄
       // 坂上
       motor_st( pwm_trace_IR );//赤外線トレース
 
@@ -1445,7 +1445,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       break;
 
     case 104:
-      led_out( 0x6 ); // 黄（赤＋緑）
+      led_out( 0x1 ); // 青
       // 下り坂
       if(IR_saka_flag == 0){
         motor_st( pwm_trace );//カメラでトレース
@@ -1542,7 +1542,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
       if((enc_total - enc_kizyun > 250)){
         if( check_rightline_forC() == 1 ) { // 右クランク
-          led_out( 0x2 );
+          led_out( 0x6 );
           cnt1 = 0;
           enc_kizyun = enc_total;         // ここを基準とする
           pattern = 31;
@@ -1734,6 +1734,8 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       set_angle = 0;             // +で左 -で右にハンドルを切ります 1度あたり48
       motor_st( pwm_kakudo );
 
+      led_out( 0x5 );
+
       if(enc > i_H_TOPSPEED ){
         x=(i_H_TOPSPEED-enc)*15;
 			  r=(i_H_TOPSPEED-enc)*5;
@@ -1788,7 +1790,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
     case 53:
       // 左レーンチェンジ　新しい中心線が見つかるまで曲げる
-
+      led_out( 0x1 );
       tsl1401_mode = 2;//右無視
 
       set_angle = 3000;             // +で左 -で右にハンドルを切ります 1度あたり48
@@ -1818,6 +1820,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
     case 54:
       // 左レーンチェンジ　
+      led_out( 0x6 );
       if((tsl1401_Center == 0)&&(tsl1401_Wide == 0)){ //インに落ちそう
 				set_angle = 2500;             // +で左 -で右にハンドルを切ります 1度あたり48
 			
@@ -1846,6 +1849,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
     case 55:
       // 左レーンチェンジ　安定するまで新しい中心線をトレース
+      led_out( 0x2 );
       if(tsl1401_Wide != 0 && -20 < tsl1401_Center && tsl1401_Center < 20 ){
         motor_st( pwm_trace );
       }else{
@@ -1869,6 +1873,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
           pattern = 11;
           cnt1 = 0;
           enc_kizyun = enc_total;         // ここを基準とする
+          led_out( 0x0 );
         }
       }
 
@@ -1878,6 +1883,8 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       // 右レーンチェンジ　右ハーフラインを通り過ぎるまで待つ
       set_angle = 0 * 48;             // +で左 -で右にハンドルを切ります 1度あたり48
       motor_st( pwm_kakudo );
+
+      led_out( 0x5 );
 
       if(enc > i_H_TOPSPEED ){
         x=(i_H_TOPSPEED-enc)*15;
@@ -1933,7 +1940,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
     case 63:
       // 右レーンチェンジ　新しい中心線が見つかるまで曲げる
-
+      led_out( 0x1 );
       tsl1401_mode = 3;//左無視
 
       set_angle = -3000;             // +で左 -で右にハンドルを切ります 1度あたり48
@@ -1963,6 +1970,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 
     case 64:
       // 右レーンチェンジ　
+      led_out( 0x6 );
       if((tsl1401_Center == 0)&&(tsl1401_Wide == 0)){ //インに落ちそう
 				set_angle = -2500;             // +で左 -で右にハンドルを切ります 1度あたり48
 			
@@ -1990,6 +1998,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       break;
 
     case 65:
+      led_out( 0x2 );
       //右レーンチェンジ　安定するまで新しい中心線をトレース
       if(tsl1401_Wide != 0 && -20 < tsl1401_Center && tsl1401_Center < 20 ){
         motor_st( pwm_trace );
@@ -2014,6 +2023,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
           pattern = 11;
           cnt1 = 0;
           enc_kizyun = enc_total;         // ここを基準とする
+          led_out( 0x0 );
         }
       }
 
