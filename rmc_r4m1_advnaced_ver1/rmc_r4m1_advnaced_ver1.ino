@@ -484,6 +484,7 @@ void setup() {
 //**********************************************************************
 void loop() {
   int i;
+  int cnt1_old = 0;
 
   // microSDへのログ保存処理
   if( f_err_sd == 0 ) {
@@ -509,7 +510,7 @@ void loop() {
             length = 8;
           }
           microSD.read( _fn_buf, length );
-          sscanf( _fn_buf, "%d", &i );//renban.txtに記載されている値をiに取得
+          sscanf( _fn_buf, "%d", &i );//renban.txtに記載されている値をiに取得 ※iの値を変更すると、最新ではなく過去のログも取得できます。
           if( i < 0 || i >= 99999 ) {
               i = 0;
           }
@@ -546,6 +547,10 @@ void loop() {
 
             Serial.print( _log_buf );
             length -= readLength;
+
+            //高速、連続出力で値がおかしくなるので待ち時間を追加
+            while(cnt1 <= cnt1_old + 1);//数値を大きくするほど安全ですが、出力時間が長くなります
+            cnt1_old = cnt1;
           }
           Serial.println("log END");
           log_pattern = 995;//終了
