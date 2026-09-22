@@ -2949,14 +2949,7 @@ void binarization(int linestart, int linestop)
     }
 
   }else{
-    //if(tsl1401_Min2 > tsl1401_WB_ave){
-    if((tsl1401_mode == 0) && (tsl1401_Min2 > 7000)){ //////////////////////////ラインが見えたときの最小値　と　全白の時の最小値　の中間くらいの値を設定する
-      /* 白が一直線のとき */
-      tsl1401_White = 127;
-      for(i = linestart ; i <= linestop; i++) {
-        BinarizationData[i] = 1;
-      }
-    }else if(tsl1401_Max2 < tsl1401_WB_ave){
+    if(tsl1401_Max2 < tsl1401_WB_ave){
       /* 黒が一面のとき */
       for(i = linestart ; i <= linestop; i++) {
 				  BinarizationData[i] = 0;
