@@ -1011,7 +1011,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
           motor_r( 100, 100 );
       }
 
-      if(enc_total < 700){
+      if(700 < enc_total){
           tsl1401_mode = 0;//通常
           pattern = 11;
           ul_cnt_curve_time_1ms = 0;
