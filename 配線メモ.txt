@@ -1,0 +1,10 @@
+カメラ	マイコン
+VCC		５V
+GND		GND
+OUT		A3
+CLK		D9
+SI		D8
+
+赤外線センサー
+R		A1
+L		A2
