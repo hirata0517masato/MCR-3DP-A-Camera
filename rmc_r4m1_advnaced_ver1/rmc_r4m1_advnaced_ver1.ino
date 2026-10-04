@@ -289,15 +289,15 @@ volatile int		    i_TOPSPEED_saka4	=		50;		//下り坂
 
 
 //前半(坂上)
-volatile int			i_SPEED_DOWN_saka	=		400;//5		//角度によりi_TOPSPEEDを減速 カーブ前半 8 6
+volatile int			i_SPEED_DOWN_saka	=		200;//5		//角度によりi_TOPSPEEDを減速 カーブ前半 8 6
 volatile int			i_MOTOR_out_R_saka=	 	100;//1		//外側モーター用パラメーター 1	-2
 volatile int			i_MOTOR_in_F_saka	=		300;//4		//内側モーター用パラメーター 	2 	1
 volatile int			i_MOTOR_in_R_saka	=		100;//-2		//内側モーター用パラメーター -2	-3
 //後半(坂上)
-volatile int			i_SPEED_DOWN_N_saka=		500;//7		//角度によりi_TOPSPEEDを減速  カーブ後半 11 10
-volatile int			i_MOTOR_out_R_N_saka=	  300;//5		//外側モーター用パラメーター 後半	5	5
-volatile int			i_MOTOR_in_F_N_saka=		700;//8		//内側モーター用パラメーター　後半	6	6
-volatile int			i_MOTOR_in_R_N_saka=		400;//6		//内側モーター用パラメーター　後半	3	3
+volatile int			i_SPEED_DOWN_N_saka=		300;//7		//角度によりi_TOPSPEEDを減速  カーブ後半 11 10
+volatile int			i_MOTOR_out_R_N_saka=	  200;//5		//外側モーター用パラメーター 後半	5	5
+volatile int			i_MOTOR_in_F_N_saka=		400;//8		//内側モーター用パラメーター　後半	6	6
+volatile int			i_MOTOR_in_R_N_saka=		200;//6		//内側モーター用パラメーター　後半	3	3
 
 //-------------------------------------------------------------
 //クランク、ハーフ直後の設定値	カーブのパラメータ変更がクランク、ハーフに影響しないようにするため
@@ -1327,7 +1327,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
 				
 			  if(ul_cnt_straight_time_1ms <= Cu_BRAKE_time && (enc_total - enc_kizyun ) >= 100){//カーブ進入時のブレーキ
 				
-				  motor_st( pwm_trace *2 );
+				  motor_st( pwm_trace_IR *2 );
 				
 				  motor_f( Cu_BRAKE_out , Cu_BRAKE_Fin );
           motor_r( Cu_BRAKE , Cu_BRAKE );
@@ -1383,7 +1383,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
         
          if(ul_cnt_straight_time_1ms <= Cu_BRAKE_time && (enc_total - enc_kizyun ) >= 100){//カーブ進入時のブレーキ
 				
-				  motor_st( pwm_trace *2 );
+				  motor_st( pwm_trace_IR *2 );
 				
 				  motor_f( Cu_BRAKE_Fin, Cu_BRAKE_out );
           motor_r( Cu_BRAKE, Cu_BRAKE );
@@ -1798,7 +1798,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       led_out( 0x1 );
       tsl1401_mode = 2;//右無視
 
-      set_angle = 3000;             // +で左 -で右にハンドルを切ります 1度あたり48
+      set_angle = 3500;             // +で左 -で右にハンドルを切ります 1度あたり48
       motor_st( pwm_kakudo );
 
       if(enc > i_H_TOPSPEED2 ){
@@ -1948,7 +1948,7 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       led_out( 0x1 );
       tsl1401_mode = 3;//左無視
 
-      set_angle = -3000;             // +で左 -で右にハンドルを切ります 1度あたり48
+      set_angle = -3500;             // +で左 -で右にハンドルを切ります 1度あたり48
       motor_st( pwm_kakudo );
 
       if(enc > i_H_TOPSPEED2 ){
