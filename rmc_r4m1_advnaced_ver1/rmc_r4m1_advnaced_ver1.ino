@@ -2061,7 +2061,11 @@ void AGTCallback(timer_callback_args_t __attribute((unused)) * p_args)
       break;
 
     case 1003:
-
+      if( 1 < enc ) {
+        motor_st( pwm_trace );
+      }else{
+        motor_st( 0 );
+      }
       break;
 
     default:
@@ -2109,7 +2113,9 @@ unsigned char startbar_get( void )
   //unsigned char sensor = (!R_PORT0->PIDR_b.PIDR4 );
   //return sensor;
 
-  if(tsl1401_Wide > 40)return 1;
+  //if(tsl1401_Wide > 40)return 1;
+
+  if(70 < IR_R)return 1;
   return 0;
   
 }
